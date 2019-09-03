@@ -35,7 +35,10 @@ namespace Microsoft.Identity.Client.OAuth2
         public const string Prompt = "prompt"; // prompt is not standard oauth2 parameter
         public const string ClientInfo = "client_info"; // restrict_to_hint is not standard oauth2 parameter
 
-        public const string Claims = "claims"; // claims is not a standard oauth2 paramter
+        public const string Claims = "claims"; // claims is not a standard oauth2 parameter
+
+        public const string TokenType = "token_type"; // token type is not a standard oauth2 param 
+
     }
 
     internal static class OAuth2GrantType

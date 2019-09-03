@@ -18,7 +18,7 @@ namespace Microsoft.Identity.Client
     public partial class AuthenticationResult
 #pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
     {
-        private const string Oauth2AuthorizationHeader = "Bearer ";
+        private readonly IAuthenticationScheme _authenticationScheme;
 
         /// <summary>
         /// Constructor meant to help application developers test their apps. Allows mocking of authentication flows.
@@ -59,12 +59,14 @@ namespace Microsoft.Identity.Client
             CorrelationId = correlationId;
         }
 
-        internal AuthenticationResult()
+        internal AuthenticationResult(
+            MsalAccessTokenCacheItem msalAccessTokenCacheItem, 
+            MsalIdTokenCacheItem msalIdTokenCacheItem, 
+            IAuthenticationScheme authenticationScheme,
+            Guid correlationID)
         {
-        }
+            _authenticationScheme = authenticationScheme ?? throw new ArgumentNullException(nameof(authenticationScheme));
 
-        internal AuthenticationResult(MsalAccessTokenCacheItem msalAccessTokenCacheItem, MsalIdTokenCacheItem msalIdTokenCacheItem, Guid correlationID)
-        {
             if (msalAccessTokenCacheItem.HomeAccountId != null)
             {
                 string username = msalAccessTokenCacheItem.IsAdfs ? msalIdTokenCacheItem?.IdToken.Upn : msalIdTokenCacheItem?.IdToken?.PreferredUsername;
@@ -74,7 +76,7 @@ namespace Microsoft.Identity.Client
                     msalAccessTokenCacheItem.Environment);
             }
 
-            AccessToken = msalAccessTokenCacheItem.Secret;
+            AccessToken = authenticationScheme.FormatAccessToken(msalAccessTokenCacheItem);
             UniqueId = msalIdTokenCacheItem?.IdToken?.GetUniqueId();
             ExpiresOn = msalAccessTokenCacheItem.ExpiresOn;
             ExtendedExpiresOn = msalAccessTokenCacheItem.ExtendedExpiresOn;
@@ -166,7 +168,7 @@ namespace Microsoft.Identity.Client
         /// </example>
         public string CreateAuthorizationHeader()
         {
-            return Oauth2AuthorizationHeader + AccessToken;
+            return _authenticationScheme?.AuthorizationHeaderPrefix ?? "Bearer" + " " + AccessToken;
         }
     }
 }

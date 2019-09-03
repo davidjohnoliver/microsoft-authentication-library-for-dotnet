@@ -5,6 +5,8 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Identity.Client.ApiConfig.Executors;
+using Microsoft.Identity.Client.PoP;
+using Microsoft.Identity.Client.TelemetryCore.Internal.Events;
 
 namespace Microsoft.Identity.Client
 {
@@ -19,6 +21,23 @@ namespace Microsoft.Identity.Client
         internal AbstractPublicClientAcquireTokenParameterBuilder(IPublicClientApplicationExecutor publicClientApplicationExecutor)
         {
             PublicClientApplicationExecutor = publicClientApplicationExecutor;
+        }
+
+        public AbstractPublicClientAcquireTokenParameterBuilder<T> WithPoPAuthenticationScheme(Uri uri) // TODO: naming and comments
+        {
+            CommonParameters.AddApiTelemetryFeature(ApiTelemetryFeature.WithScheme);
+            CommonParameters.AuthenticationScheme = new PoPAuthenticationScheme(uri, null); // TODO add a default crypto provider
+
+            return this;
+        }
+
+        // Allows testing the PoP flow with any crypto. Consider making this public.
+        internal AbstractPublicClientAcquireTokenParameterBuilder<T> WithPoPAuthenticationScheme(Uri protectedUri, IPoPCryptoProvider popCryptoProvider) 
+        {
+            CommonParameters.AddApiTelemetryFeature(ApiTelemetryFeature.WithScheme);
+            CommonParameters.AuthenticationScheme = new PoPAuthenticationScheme(protectedUri, popCryptoProvider); 
+
+            return this;
         }
 
         internal abstract Task<AuthenticationResult> ExecuteInternalAsync(CancellationToken cancellationToken);

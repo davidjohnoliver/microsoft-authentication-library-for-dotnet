@@ -24,7 +24,8 @@ namespace Microsoft.Identity.Client.Cache.Items
             string clientId,
             MsalTokenResponse response,
             string tenantId,
-            string userId = null)
+            string userId = null, 
+            string keyId = null)
             : this(
                 preferredCacheEnv,
                 clientId,
@@ -34,7 +35,8 @@ namespace Microsoft.Identity.Client.Cache.Items
                 response.AccessTokenExpiresOn,
                 response.AccessTokenExtendedExpiresOn,
                 response.ClientInfo,
-                userId)
+                userId,
+                keyId)
         {
         }
 
@@ -47,7 +49,8 @@ namespace Microsoft.Identity.Client.Cache.Items
             DateTimeOffset accessTokenExpiresOn,
             DateTimeOffset accessTokenExtendedExpiresOn,
             string rawClientInfo,
-            string userId = null)
+            string userId = null, 
+            string keyId = null)
             : this()
         {
             Environment = preferredCacheEnv;
@@ -59,6 +62,7 @@ namespace Microsoft.Identity.Client.Cache.Items
             ExtendedExpiresOnUnixTimestamp = CoreHelpers.DateTimeToUnixTimestamp(accessTokenExtendedExpiresOn);
             CachedAt = CoreHelpers.CurrDateTimeInUnixTimestamp();
             RawClientInfo = rawClientInfo;
+            Kid = keyId;
 
             //Adfs does not send back client info, so HomeAccountId must be explicitly set
             HomeAccountId = userId;
@@ -81,8 +85,13 @@ namespace Microsoft.Identity.Client.Cache.Items
         internal string CachedAt { get; set; }
         internal string ExpiresOnUnixTimestamp { get; set; }
         internal string ExtendedExpiresOnUnixTimestamp { get; set; }
-        public string UserAssertionHash { get; set; }
+        internal string UserAssertionHash { get; set; }
  
+        /// <summary>
+        /// Used when the token is bound to a public / private key pair which is identified by a key id (kid). 
+        /// Currently used by PoP tokens
+        /// </summary>
+        internal string Kid { get; private set; }
 
         internal bool IsAdfs { get; set; }
 
@@ -128,6 +137,7 @@ namespace Microsoft.Identity.Client.Cache.Items
                 ExpiresOnUnixTimestamp = expiresOn.ToString(CultureInfo.InvariantCulture),
                 ExtendedExpiresOnUnixTimestamp = extendedExpiresOn.ToString(CultureInfo.InvariantCulture),
                 UserAssertionHash = JsonUtils.ExtractExistingOrEmptyString(j, StorageJsonKeys.UserAssertionHash),
+                Kid = JsonUtils.ExtractExistingOrEmptyString(j, StorageJsonKeys.Kid)
             };
 
             item.PopulateFieldsFromJObject(j);
@@ -145,6 +155,7 @@ namespace Microsoft.Identity.Client.Cache.Items
             SetItemIfValueNotNull(json, StorageJsonKeys.CachedAt, CachedAt);
             SetItemIfValueNotNull(json, StorageJsonKeys.ExpiresOn, ExpiresOnUnixTimestamp);
             SetItemIfValueNotNull(json, StorageJsonKeys.ExtendedExpiresOn, ExtendedExpiresOnUnixTimestamp);
+            SetItemIfValueNotNull(json, StorageJsonKeys.Kid, Kid);
 
             // previous versions of msal used "ext_expires_on" instead of the correct "extended_expires_on".
             // this is here for back compat

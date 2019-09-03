@@ -17,6 +17,9 @@ using System.Threading.Tasks;
 using Microsoft.Identity.Client.Cache.Items;
 using Microsoft.Identity.Client.TelemetryCore.Internal.Events;
 using Microsoft.Identity.Client.Instance.Discovery;
+using Microsoft.Identity.Json.Linq;
+using System.Text;
+using Microsoft.Identity.Json;
 
 namespace Microsoft.Identity.Client.Internal.Requests
 {
@@ -210,11 +213,14 @@ namespace Microsoft.Identity.Client.Internal.Requests
             AuthenticationRequestParameters.TenantUpdatedCanonicalAuthority =
                    AuthenticationRequestParameters.Authority.GetTenantedAuthority(idToken?.TenantId);
 
+
             AuthenticationRequestParameters.RequestContext.Logger.Info("Saving Token Response to cache..");
 
             var tuple = await CacheManager.SaveTokenResponseAsync(msalTokenResponse).ConfigureAwait(false);
-            return new AuthenticationResult(tuple.Item1, tuple.Item2, AuthenticationRequestParameters.RequestContext.CorrelationId);
+            var atItem = tuple.Item1;
+            var idtItem = tuple.Item2;
 
+            return new AuthenticationResult(atItem, idtItem, AuthenticationRequestParameters.RequestContext.CorrelationId);
         }
 
         private void ValidateAccountIdentifiers(ClientInfo fromServer)
@@ -277,6 +283,7 @@ namespace Microsoft.Identity.Client.Internal.Requests
                 cancellationToken);
         }
 
+
         protected async Task<MsalTokenResponse> SendTokenRequestAsync(
             string tokenEndpoint,
             IDictionary<string, string> additionalBodyParameters,
@@ -286,7 +293,6 @@ namespace Microsoft.Identity.Client.Internal.Requests
             client.AddBodyParameter(OAuth2Parameter.ClientId, AuthenticationRequestParameters.ClientId);
             client.AddBodyParameter(OAuth2Parameter.ClientInfo, "1");
 
-            // TODO: ideally, this can come from the particular request instance and not be in RequestBase since it's not valid for all requests.
 
 #if DESKTOP || NETSTANDARD1_3 || NET_CORE
             if (AuthenticationRequestParameters.ClientCredential != null)
@@ -316,8 +322,14 @@ namespace Microsoft.Identity.Client.Internal.Requests
                 client.AddBodyParameter(kvp.Key, kvp.Value);
             }
 
+            foreach (var kvp in AuthenticationRequestParameters.AuthenticationScheme.GetTokenRequestParams())
+            {
+                client.AddBodyParameter(kvp.Key, kvp.Value);
+            }
+
             return await SendHttpMessageAsync(client, tokenEndpoint).ConfigureAwait(false);
         }
+
 
         private async Task<MsalTokenResponse> SendHttpMessageAsync(OAuth2Client client, string tokenEndpoint)
         {
@@ -363,6 +375,5 @@ namespace Microsoft.Identity.Client.Internal.Requests
                     AuthenticationRequestParameters.AuthorityInfo.CanonicalAuthority,
                     metadata.PreferredNetwork);
         }
-
     }
 }

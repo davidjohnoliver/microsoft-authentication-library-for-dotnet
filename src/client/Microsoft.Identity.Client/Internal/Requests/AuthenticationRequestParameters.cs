@@ -9,6 +9,7 @@ using Microsoft.Identity.Client.ApiConfig.Parameters;
 using Microsoft.Identity.Client.Cache;
 using Microsoft.Identity.Client.Core;
 using Microsoft.Identity.Client.Instance;
+using Microsoft.Identity.Client.PoP;
 using Microsoft.Identity.Client.TelemetryCore.Internal.Events;
 using Microsoft.Identity.Client.Utils;
 
@@ -75,6 +76,8 @@ namespace Microsoft.Identity.Client.Internal.Requests
         public AuthorityInfo AuthorityOverride => _commonParameters.AuthorityOverride;
 
         internal bool IsBrokerEnabled { get; set; }
+
+        public IAuthenticationScheme AuthenticationScheme => _commonParameters.AuthenticationScheme;
 
 #region TODO REMOVE FROM HERE AND USE FROM SPECIFIC REQUEST PARAMETERS
         // TODO: ideally, these can come from the particular request instance and not be in RequestBase since it's not valid for all requests.
